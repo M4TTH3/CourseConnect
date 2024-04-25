@@ -7,10 +7,7 @@ from fastapi import (
     WebSocket,
     WebSocketDisconnect
 )
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
-
-import logging
 
 class GroupSession:
     """
@@ -29,7 +26,7 @@ class GroupSession:
         self.members.append(ws)
 
     def disconnect(self, ws: WebSocket) -> None:
-        self.members.remove(WebSocket)
+        self.members.remove(ws)
 
     async def sendAll(self, msg: str) -> None:
         "Sends the message to everyone in the group"
@@ -63,6 +60,22 @@ class GroupSessionsManager:
 
     def getSession(self, idCode) -> GroupSession:
         return self.sessions.get(idCode)
+
+class Message:
+
+    msg: str
+    sender: str
+    timestamp: str
+    expiry_date: str
+
+    def __init__(self, sender: str, msg: str, duration: int) -> None:
+        """
+        duration: milliseconds
+        """
+        pass
+
+    def __str__(self) -> str:
+        return self.msg
 
 
 manager = GroupSessionsManager()
