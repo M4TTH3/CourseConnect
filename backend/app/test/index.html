@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+        <title>Simple Chat</title>
+        <style>
+            body {
+                height: 100dvh;
+                width: 100dvw;
+                margin: 0;
+            }
+
+            #twochats {
+                width: 100%;
+                height: 100%;
+
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+            }
+
+            #chat1, #chat2 {
+                display: flex;
+                flex-direction: column;
+
+                align-items: center;
+            }
+        </style>
+    </head>
+    <body>
+        <h1 class="header" style="text-align: center;">Simple Chat</h1>
+
+        <div id="twochats">
+        </div>
+        
+    </body>
+    <script>
+        const inject = (code) => `
+            <div id="chat${code}">
+                <form action="" onsubmit="">
+                    <label> ID Code: <input name="idcode" type="text" value="8000" /> <input type="button" value="Connect" onclick="connect(event)"/></label>
+                </form>
+                <span class="status" style="color: red; margin: 5px 0px 5px 0px">Not Connected</span>
+                <form action="" onsubmit="sendMessage(event)" style="margin-left: 45px; margin-top: 20px;">
+                    <input name="message" type="text" value="hello"/>
+                    <input type="submit" value="Send"/>
+                </form>
+                <style>
+                    textarea {
+                        resize: none;
+                        margin-top: 20px;
+                        background: white;
+
+                        border: solid black;
+                        display: block;
+                        text-align: left;
+                    }
+                </style>
+                <textarea class="inputfield" rows="20" cols="80" disabled></textarea>
+            </div>
+        `;
+
+        $(document).ready(function() {
+            $("#twochats").append(inject(1));
+            $("#twochats").append(inject(2));
+        });
+        
+        const connections = {
+            chat1: null,
+            chat2: null
+        }
+
+        const sendMessage = (e) => {
+            e.preventDefault();
+
+            const curChat = e.target.closest("div");
+            const form = e.target.closest("form");   
+            
+            const formData = new FormData(form);
+            const message = formData.get('message');
+
+            const ws = curChat.id == "chat1" ? connections.chat1 : connections.chat2;
+
+            if (!ws || ws.readyState !== ws.OPEN) {
+                const errorNode = curChat.querySelector('span');
+                const prevText = errorNode.textContent;
+
+                errorNode.textContent = "Failed to send message";
+                setTimeout(() => {
+                    errorNode.textContent = prevText;
+                }, 5000)
+            } else {
+                ws.send(message);
+                form.querySelector('input[name="message"]').value = "";
+            }
+        }
+
+        const connect = async (e) => {
+            const curChat = e.target.closest("div");
+            const status = curChat.querySelector(".status");
+            const form = e.target.closest("form");
+
+            const formData = new FormData(form);
+            const routecode = formData.get('idcode')
+
+            const ws = await new WebSocket("ws://localhost:8000/chats/" + routecode + "/ws");
+
+            ws.addEventListener("message", (event) => {
+                const textarea = curChat.querySelector("textarea");
+                textarea.textContent += "\n" + event.data;
+            });
+
+            if (curChat.id === "chat1") connections.chat1 = ws;
+            else if (curChat.id === "chat2") connections.chat2 = ws;
+
+            while(ws.readyState !== ws.OPEN && ws.readyState !== ws.CLOSED) {
+                await new Promise(resolve => setTimeout(resolve, 10));
+            }
+
+            if (ws.readyState === ws.OPEN) {
+                status.textContent = `Connected to ${routecode}`;
+                status.style = "color: green; margin: 5px 0px 5px 0px";
+            } else {
+                status.textContent = `Failed to connect to ${routecode}`;
+                setTimeout(function() {
+                    status.textContent = `Not Connected`;
+                }, 5000)
+            }
+
+            e.preventDefault();
+        };
+    </script>
+</html>
