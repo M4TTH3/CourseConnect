@@ -2,9 +2,10 @@ import { useEffect, useState, createContext, useContext } from 'react'
 import { setItemAsync, getItemAsync } from 'expo-secure-store'
 import { TokenResponse } from 'expo-auth-session';
 import { jwtDecode } from 'jwt-decode'
+import "core-js/stable/atob"; // Used to fix jwtDecode imports from core-js
 import * as WebBrowser from 'expo-web-browser'
 import * as AuthSession from 'expo-auth-session'
-import { Alert, Platform } from 'react-native';
+import { Alert } from 'react-native';
 
 /* 
 These functions allow you to securely store tokens in the device encrypted
@@ -17,7 +18,6 @@ const setToken = async (token) => setItemAsync(AUTH_STORAGE_KEY, token);
 const getCachedToken = async () => getItemAsync(AUTH_STORAGE_KEY);
 
 /* Settings for Auth0 */
-const useProxy = Platform.select({ web: false, default: true })
 const AUTH0_DOMAIN = "https://dev-ci0ohe1d547k4xmv.us.auth0.com";
 const AUTH0_SETTINGS = {
     clientId: "oaGNeBKP9gAgI6CiyBuV9PTGc49kZZCH",
@@ -25,10 +25,11 @@ const AUTH0_SETTINGS = {
     authEndpoint: `${AUTH0_DOMAIN}/authorize`,
     tokenEndpoint: `${AUTH0_DOMAIN}/oauth/token`,
     redirectUri: AuthSession.makeRedirectUri({ scheme: "uwcourseconnect" }),
-    scopes: ['read:groupchat', 'write:groupchat', 'read:profile', 'write:profile']
+    scopes: ['openid', 'email', 'offline_access', 'read:groupchat', 'write:groupchat', 'read:profile', 'write:profile']
 };
 
-console.log(AUTH0_SETTINGS.redirectUri);
+// // Debug redirect url
+// console.log(AUTH0_SETTINGS.redirectUri);
 
 /* Let the web browser close correctly when using authenticating */
 WebBrowser.maybeCompleteAuthSession();
@@ -54,16 +55,24 @@ export const AuthContextProvider = ({ children }) => {
         {
             redirectUri: AUTH0_SETTINGS.redirectUri,
             clientId: AUTH0_SETTINGS.clientId,
-            responseType: 'token',
+            responseType: 'code',
             scopes: AUTH0_SETTINGS.scopes,
             extraParams: {
                 audience: 'https://courseconnectapi.mattheway.com/',
-                access_type: 'offline',
                 nonce: 'nonce'
             }
         },
         { authorizationEndpoint: AUTH0_SETTINGS.authEndpoint }
     );
+
+    const logout = () => {
+        /**
+         * Used to clear the cache and all data pertaining to a user
+         * Used in a logout button
+         */
+        setToken("");
+        setUser({});
+    };
 
     const readTokenFromStorage = async () => {
 
@@ -90,7 +99,6 @@ export const AuthContextProvider = ({ children }) => {
 
     useEffect(() => {
         // Update contents whenever the result is changed
-
         readTokenFromStorage();
         if (!result) return;
 
@@ -106,7 +114,7 @@ export const AuthContextProvider = ({ children }) => {
             // Retrieve access token and refresh token from code
             AuthSession.exchangeCodeAsync(
                 {
-                    code,
+                    code: code,
                     redirectUri: AUTH0_SETTINGS.redirectUri,
                     clientId: AUTH0_SETTINGS.clientId,
                     extraParams: {
@@ -115,18 +123,20 @@ export const AuthContextProvider = ({ children }) => {
                 },
                 { tokenEndpoint: AUTH0_SETTINGS.tokenEndpoint }
             ).then((res) => {
-                const tokenConfig = res?.getRequestConfig();
-                const jwtToken = res?.tokenConfig.accessToken;
-                
+                const tokenConfig = res.getRequestConfig();
+                const jwtToken = tokenConfig.accessToken;
+
                 setToken(JSON.stringify(tokenConfig)); // Cache token
                 setUser({jwtToken: jwtToken, token: jwtDecode(jwtToken)}); // Update user
+            }).catch((err) => {
+                console.log(err);
             });
         };
 
     }, [result]);
 
     return (
-        <AuthContext.Provider value={{user: user, promptAsync: promptAsync}}>
+        <AuthContext.Provider value={{user: user, promptAsync: promptAsync, logout: logout}}>
             {children}
         </AuthContext.Provider>
     );
