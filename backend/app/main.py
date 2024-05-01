@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Security
 from .routers import chats
-from .internal.auth import VerifyJWT
+from .internal.auth import VerifyJWT, AuthUser
 
 from fastapi.staticfiles import StaticFiles
 
@@ -17,5 +17,5 @@ async def root():
 
 
 @app.get("/tokentest")
-async def tokentest(auth_result: str = Security(auth.verify, scopes=['read:profile'])):
-    return auth_result
+async def tokentest(auth_result: AuthUser = Security(auth.verify, scopes=['read:profile'])):
+    return str(auth_result)

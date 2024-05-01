@@ -6,3 +6,5 @@ aiofiles
 pydantic-settings
 pyjwt
 pyjwt[crypto]
+
+requests
