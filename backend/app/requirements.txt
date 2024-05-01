@@ -3,3 +3,6 @@ sqlalchemy
 uvicorn[standard]
 
 aiofiles
+pydantic-settings
+pyjwt
+pyjwt[crypto]
