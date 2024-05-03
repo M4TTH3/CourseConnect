@@ -12,7 +12,7 @@ Define the User Schemas
 """
 
 class UserBase(BaseModel):
-    email_hashed: str
+    id: int
 
 class CreateUser(UserBase):
     pass
@@ -36,17 +36,18 @@ Define the Chat Schemas
 """
 
 class ChatBase(BaseModel):
-    id: str
+    id: int
 
 class DeleteChat(ChatBase):
     pass
     
 class Chat(ChatBase):
+    post_date: int
     course: str
     content_type: str
+    content_number: int | None = None
     
-    # Commented out because client doesn't need to know users
-    users: list['UserBase']
+    users: list['UserBase'] # Want only IDs from User
     messages: list['Message'] = []
     
     def model_post_init(self, __context: Any) -> None:
@@ -70,11 +71,11 @@ class DeleteMessage(MessageBase):
     id: int
     
 class CreateMessage(MessageBase):
-    sender: str
     contents: str
     chat_id: str
     
 class Message(CreateMessage):
+    sender: int
     id: int
 
     class Config:
@@ -96,6 +97,7 @@ class CreatePost(PostBase):
     content_type: Assignment | Quiz | Midterm | Final
     content_number: Specify Selection
     """
+    size_limit: int
     course: str
     content_type: str
     content_number: int | None = None
@@ -113,7 +115,8 @@ class Post(CreatePost):
     content_type: str
     content_number: int | None = None
     description: str
-    user_email_hashed: str
+    size_limit: int
+    user_id: int
     
     # Commented because no need to track user
     # user: 'User'

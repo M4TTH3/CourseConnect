@@ -17,13 +17,13 @@ Chat (One to Many) Message
 
 user_chat = Table(
     "user_chat_association_table", DB_Base.metadata,
-    Column("user_email_hashed", ForeignKey("users.email_hashed"), primary_key=True),
+    Column("user_id", ForeignKey("users.id"), primary_key=True),
     Column("chat_id", ForeignKey("chats.id"), primary_key=True)
 )
 
 class User(DB_Base):
     """
-    Note the email MUST be the hashed email
+    id: given by auth0
     
     blocked: All hashed emails the user has blocked
     reports: All reports directed at the current user
@@ -31,7 +31,7 @@ class User(DB_Base):
     
     __tablename__ = "users"
     
-    email_hashed = Column(String, primary_key=True)
+    id = Column(Integer, primary_key=True)
     blocked = Column(ARRAY(String))
     reports = Column(ARRAY(String))
     
@@ -43,7 +43,7 @@ class Post(DB_Base):
     This is a post and it will have a unique_id that will be used when converted to a Chat
     
     post_date: epoch time - Use this for deleting older posts or filtering by post_date
-    course: str - the course they're taking i.e. CS246
+    course_code: str - the course they're taking i.e. CS246
     content_type: str - the type of content, Assignment | Quiz | Midterm | Final
     content_number: str - The number for the content_type like 5 for "Assignment 5"
     """
@@ -52,12 +52,13 @@ class Post(DB_Base):
     
     id = Column(Integer, primary_key=True)
     post_date = Column(Integer, index=True)
-    course = Column(String, index=True)
+    course_code = Column(String, index=True)
     content_type = Column(String)
     content_number = Column(Integer, nullable=True)
     description = Column(String)
+    size_limit = Column(Integer, index=True)
     
-    user_email_hashed = Column(String, ForeignKey("users.email_hashed"))
+    user_id = Column(Integer, ForeignKey("users.id"))
     
     user = relationship("User", back_populates="posts")
     
@@ -71,6 +72,9 @@ class Chat(DB_Base):
     
     id = Column(Integer, primary_key=True)
     size_limit = Column(Integer, index=True)
+    course_code = Column(String, index=True)
+    content_type = Column(String)
+    content_number = Column(Integer, nullable=True)
     
     users = relationship("User", secondary=user_chat, back_populates="chats")
     messages = relationship("Message", back_populates="chat")
@@ -79,7 +83,7 @@ class Chat(DB_Base):
 class Message(DB_Base):
     """
     This is a message and is linked with a specific Chat.
-    sender: str - the hashed email of the owner
+    sender: str - the ID of the sender
     contents: str - the contents of the message
     chat_id: Integer (the ID of chat it belongs to)
     """
@@ -87,7 +91,7 @@ class Message(DB_Base):
     __tablename__ = "messages"
     
     id = Column(Integer, primary_key=True, autoincrement=True)
-    sender = Column(String, index=True)
+    sender = Column(Integer, index=True)
     contents = Column(String)
     chat_id = Column(Integer, ForeignKey("chats.id"))
 

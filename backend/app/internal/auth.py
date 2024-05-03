@@ -1,30 +1,10 @@
-from functools import lru_cache
-from pydantic_settings import BaseSettings
-
+from .settings import get_settings, AppSettings
 from fastapi import Depends, HTTPException, status
 from fastapi.security import SecurityScopes, HTTPAuthorizationCredentials, HTTPBearer
 import jwt
 import requests as req
 
 import hashlib
-
-"""
-Load the auth0 settings from .env
-"""
-
-class AUTH0_Settings(BaseSettings):
-    domain: str
-    api_audience: str
-    issuer: str
-    algorithm: str
-    
-    class Config:
-        env_file = "app/.env"
-
-# Cache the setting to reduce reloading settings
-@lru_cache()
-def get_settings() -> AUTH0_Settings:
-    return AUTH0_Settings()
 
 """
 Create the class to verify the token
@@ -38,14 +18,22 @@ class AuthUser:
     
     access_token: str
     decoded: dict[str, any]
-    open_id: dict | None 
+    uid: int
+    sub: str
+    openid: dict | None 
     hashed_open_id: dict[str, str | bytes] 
     
     def __init__(self, access_token, decoded) -> None:
         self.access_token = access_token
         self.decoded = decoded
-        self.open_id = None
+        self.openid = None
         self.hashed_open_id = {}
+        
+        try:
+            self.uid = int(decoded['uid'])
+            self.sub = decoded['sub']
+        except Exception as e:
+            raise UnauthorizedException('Missing uid or sub')
     
     def get_openid(self) -> dict:
         scope: str = self.decoded.get("scope")
@@ -62,8 +50,8 @@ class AuthUser:
             )
             
             if data.status_code == 200:
-                self.open_id = data.json()
-                return self.open_id
+                self.openid = data.json()
+                return self.openid
             else:
                 raise "Bad openid retrieval"
             
@@ -77,10 +65,13 @@ class AuthUser:
         Use a faster hash sha256
         """
         
-        if not self.open_id:
+        if option in self.decoded:
+            ret: str = self.decoded[option]
+        
+        elif not self.openid:
             self.get_openid()
-    
-        ret: str = self.open_id.get(option)
+            ret: str = self.openid.get(option)
+            
         if not ret: raise UnauthorizedException(f'Missing "{option} scope"')
         
         if hash:
@@ -106,7 +97,7 @@ class UnauthenticatedException(HTTPException):
 
 class VerifyJWT:
 
-    config: AUTH0_Settings
+    config: AppSettings
 
     def __init__(self) -> None:
         self.config = get_settings()
@@ -125,7 +116,7 @@ class VerifyJWT:
         }
         """
         
-        if token is None: raise UnauthenticatedException
+        if token is None: raise UnauthenticatedException()
         
         try:
             # Get token 'kid'
@@ -140,6 +131,12 @@ class VerifyJWT:
                 issuer=self.config.issuer
             )
             
+            is_verified: bool | None = payload.get('is_verified')
+            if not is_verified: raise UnauthorizedException('Email is not verified')
+        
+        except UnauthorizedException:
+            raise
+        
         except Exception as error:
             raise UnauthorizedException(str(error))
         
