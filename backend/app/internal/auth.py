@@ -6,6 +6,8 @@ from fastapi.security import SecurityScopes, HTTPAuthorizationCredentials, HTTPB
 import jwt
 import requests as req
 
+import hashlib
+
 """
 Load the auth0 settings from .env
 """
@@ -31,16 +33,19 @@ Create the class to verify the token
 class AuthUser:
     """
     This class will be returned to allow holds all the data for an authenticated user
+    hashed_open_id stores any results of get_openid_param when hash is true
     """
     
     access_token: str
     decoded: dict[str, any]
-    open_id: dict
+    open_id: dict | None 
+    hashed_open_id: dict[str, str | bytes] 
     
     def __init__(self, access_token, decoded) -> None:
         self.access_token = access_token
         self.decoded = decoded
         self.open_id = None
+        self.hashed_open_id = {}
     
     def get_openid(self) -> dict:
         scope: str = self.decoded.get("scope")
@@ -65,17 +70,23 @@ class AuthUser:
         except Exception as e:
             raise UnauthorizedException(str(e))
         
-    def get_openid_param(self, option: str) -> str:
+    def get_openid_param(self, option: str = 'email', hash: bool = True) -> str:
         """
-        Options include 'email' 'picture'
+        Options include 'email' (only email for now)
+        Will hash if is true for a protected database
+        Use a faster hash sha256
         """
         
         if not self.open_id:
             self.get_openid()
     
-        ret = self.open_id.get(option)
-        if not ret:
-            raise UnauthorizedException(f'Missing "{option} scope"')
+        ret: str = self.open_id.get(option)
+        if not ret: raise UnauthorizedException(f'Missing "{option} scope"')
+        
+        if hash:
+            encoded = ret.encode('utf-8')
+            ret = hashlib.sha256(encoded).hexdigest()
+            self.hashed_open_id[option] = ret
         
         return ret
     

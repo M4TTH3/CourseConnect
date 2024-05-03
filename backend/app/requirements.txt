@@ -8,3 +8,4 @@ pyjwt
 pyjwt[crypto]
 
 requests
+bcrypt
