@@ -1,7 +1,16 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker
 from .settings import get_settings
+from fastapi import HTTPException
+
+class HTTPObjectNotFound(HTTPException):
+    def __init__(self) -> None:
+        super().__init__(404, "Object not found in Database")
+        
+class HTTPObjectExists(HTTPException):
+    def __init__(self) -> None:
+        super().__init__(400, "Object already exists in the database")
 
 db_settings = get_settings()
 db_url = db_settings.SQLALCHEMY_DATABASE_URL

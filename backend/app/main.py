@@ -1,13 +1,14 @@
 from fastapi import FastAPI, Security
-from .routers import chats
-from .internal.auth import VerifyJWT, AuthUser
+from .routers import chats, users, posts
+from .internal.auth import auth, AuthUser
 
 from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(debug=True)
-auth = VerifyJWT()
 
 app.include_router(chats.router)
+app.include_router(users.router)
+app.include_router(posts.router)
 
 app.mount('/testchat', StaticFiles(directory="app/test", html=True), name='testchat')
 

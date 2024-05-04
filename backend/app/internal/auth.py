@@ -3,6 +3,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import SecurityScopes, HTTPAuthorizationCredentials, HTTPBearer
 import jwt
 import requests as req
+import uuid
 
 import hashlib
 
@@ -18,7 +19,7 @@ class AuthUser:
     
     access_token: str
     decoded: dict[str, any]
-    uid: int
+    uid: uuid.UUID
     sub: str
     openid: dict | None 
     hashed_open_id: dict[str, str | bytes] 
@@ -30,9 +31,14 @@ class AuthUser:
         self.hashed_open_id = {}
         
         try:
-            self.uid = int(decoded['uid'])
+            # uid comes as 21 digit number. lets make it a 32 bit number.
+            # take the last 31 bits
+            self.uid = uuid.UUID(decoded['uid'])
             self.sub = decoded['sub']
-        except Exception as e:
+        
+        except ValueError:
+            raise UnauthorizedException('Bad UUID value')
+        except Exception:
             raise UnauthorizedException('Missing uid or sub')
     
     def get_openid(self) -> dict:
@@ -155,4 +161,4 @@ class VerifyJWT:
              if search not in scopes:
                  raise UnauthorizedException(detail=f'Missing "{search}" scope')
         
-        
+auth = VerifyJWT()

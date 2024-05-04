@@ -2,7 +2,7 @@
 Models are SQLAlchemy ORM used to define Table properties
 """
 
-from sqlalchemy import Column, ForeignKey, Integer, String, ARRAY, Table
+from sqlalchemy import Column, ForeignKey, UUID, String, ARRAY, Table, Integer, BIGINT
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import ARRAY
 
@@ -13,7 +13,6 @@ User (One to Many) Posts
 User (Many to Many) Chats
 Chat (One to Many) Message
 """
-
 
 user_chat = Table(
     "user_chat_association_table", DB_Base.metadata,
@@ -31,12 +30,12 @@ class User(DB_Base):
     
     __tablename__ = "users"
     
-    id = Column(Integer, primary_key=True)
+    id = Column(UUID(as_uuid=True), primary_key=True)
     blocked = Column(ARRAY(String))
     reports = Column(ARRAY(String))
     
     posts = relationship("Post", back_populates="user")
-    chats = relationship("Chat", back_populates="users")
+    chats = relationship("Chat", secondary=user_chat, back_populates="users")
     
 class Post(DB_Base):
     """
@@ -50,15 +49,15 @@ class Post(DB_Base):
     
     __tablename__ = "posts"
     
-    id = Column(Integer, primary_key=True)
-    post_date = Column(Integer, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    post_date = Column(BIGINT, index=True)
     course_code = Column(String, index=True)
     content_type = Column(String)
     content_number = Column(Integer, nullable=True)
     description = Column(String)
     size_limit = Column(Integer, index=True)
     
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     
     user = relationship("User", back_populates="posts")
     
@@ -70,7 +69,7 @@ class Chat(DB_Base):
     
     __tablename__ = "chats"
     
-    id = Column(Integer, primary_key=True)
+    id = Column(UUID(as_uuid=True), primary_key=True)
     size_limit = Column(Integer, index=True)
     course_code = Column(String, index=True)
     content_type = Column(String)
@@ -93,7 +92,7 @@ class Message(DB_Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     sender = Column(Integer, index=True)
     contents = Column(String)
-    chat_id = Column(Integer, ForeignKey("chats.id"))
+    chat_id = Column(UUID(as_uuid=True), ForeignKey("chats.id"))
 
     chat = relationship("Chat", back_populates="messages")
     

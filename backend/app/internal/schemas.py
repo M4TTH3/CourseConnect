@@ -1,23 +1,20 @@
 from typing import Any
 from pydantic import BaseModel
+from uuid import UUID
 
 """
 Schemas are used to precisely define how python can interact with db_models
 """
 
-class Post: pass
 
 """
 Define the User Schemas
 """
 
 class UserBase(BaseModel):
-    id: int
+    id: UUID
 
 class CreateUser(UserBase):
-    pass
-
-class DeleteUser(UserBase):
     pass
 
 class User(UserBase):
@@ -28,7 +25,7 @@ class User(UserBase):
     chats: list['Chat'] = []
     
     class Config:
-        orm_mode = True
+        from_attributes = True
     
 
 """
@@ -36,10 +33,7 @@ Define the Chat Schemas
 """
 
 class ChatBase(BaseModel):
-    id: int
-
-class DeleteChat(ChatBase):
-    pass
+    id: UUID
     
 class Chat(ChatBase):
     post_date: int
@@ -57,7 +51,7 @@ class Chat(ChatBase):
         self.users = [UserBase(**test.model_dump()) for test in self.users]
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 """
@@ -66,17 +60,14 @@ Define the Message Schema
 
 class MessageBase(BaseModel):
     pass
-
-class DeleteMessage(MessageBase):
-    id: int
     
 class CreateMessage(MessageBase):
     contents: str
-    chat_id: str
+    chat_id: UUID
     
 class Message(CreateMessage):
-    sender: int
-    id: int
+    sender: str
+    id: UUID
 
     class Config:
         orm_mode = True
@@ -87,9 +78,6 @@ Define the Post Schemas
 
 class PostBase(BaseModel):
     pass
-
-class LeavePost(PostBase):
-    id: int
     
 class CreatePost(PostBase):
     """
@@ -98,7 +86,7 @@ class CreatePost(PostBase):
     content_number: Specify Selection
     """
     size_limit: int
-    course: str
+    course_code: str
     content_type: str
     content_number: int | None = None
     description: str
@@ -109,20 +97,15 @@ class Post(CreatePost):
     content_type: Assignment | Quiz | Midterm | Final
     content_number: Specify Selection
     """
-    id: int
+    id: UUID
     post_date: int
-    course: str
-    content_type: str
-    content_number: int | None = None
-    description: str
-    size_limit: int
-    user_id: int
+    user_id: UUID
     
     # Commented because no need to track user
     # user: 'User'
     
     class Config:
-        orm_mode = True
+        from_attributes = True
         
 
 
