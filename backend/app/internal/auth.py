@@ -121,16 +121,19 @@ class VerifyJWT:
             decoded: dict - the decoded token
         }
         """
-        
+        return await self.verify_std(security_scopes.scopes, token.credentials)
+
+    
+    async def verify_std(self, scopes: list[str], token):
         if token is None: raise UnauthenticatedException()
         
         try:
             # Get token 'kid'
-            signing_key = self.jwks_client.get_signing_key_from_jwt(token.credentials).key 
+            signing_key = self.jwks_client.get_signing_key_from_jwt(token).key 
             
             # Get the payload
             payload: dict = jwt.decode(
-                token.credentials,
+                token,
                 signing_key,
                 algorithms=self.config.algorithm,
                 audience=self.config.api_audience,
@@ -146,10 +149,11 @@ class VerifyJWT:
         except Exception as error:
             raise UnauthorizedException(str(error))
         
-        if len(security_scopes.scopes) > 0:
-            self._check_scopes(payload, security_scopes.scopes)
+        if len(scopes) > 0:
+            self._check_scopes(payload, scopes)
         
-        return AuthUser(token.credentials, payload)
+        return AuthUser(token, payload)
+        
     
     def _check_scopes(self, payload: dict[str, str], expected_scopes: list) -> None:
         if 'scope' not in payload:

@@ -34,7 +34,7 @@ class User(DB_Base):
     blocked = Column(ARRAY(String))
     reports = Column(ARRAY(String))
     
-    posts = relationship("Post", back_populates="user")
+    posts = relationship("Post", back_populates="user", cascade='all, delete')
     chats = relationship("Chat", secondary=user_chat, back_populates="users")
     
 class Post(DB_Base):
@@ -60,6 +60,7 @@ class Post(DB_Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     
     user = relationship("User", back_populates="posts")
+    linked_chat = relationship("Chat", back_populates="post", uselist=False)
     
 
 class Chat(DB_Base):
@@ -74,9 +75,11 @@ class Chat(DB_Base):
     course_code = Column(String, index=True)
     content_type = Column(String)
     content_number = Column(Integer, nullable=True)
+    post_id = Column(UUID(as_uuid=True), ForeignKey("posts.id"), nullable=True)
     
     users = relationship("User", secondary=user_chat, back_populates="chats")
-    messages = relationship("Message", back_populates="chat")
+    messages = relationship("Message", back_populates="chat", cascade='all, delete')
+    post = relationship("Post", back_populates="linked_chat")
     
     
 class Message(DB_Base):

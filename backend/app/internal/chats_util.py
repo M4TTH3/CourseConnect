@@ -47,10 +47,6 @@ class GroupSessionsManager:
         else:
             self.sessions[idcode].attach(ws)
 
-        print(idcode)
-        print(self.sessions[idcode].members)
-        print(self.sessions)
-
     def getSession(self, idCode) -> GroupSession:
         return self.sessions.get(idCode)
 

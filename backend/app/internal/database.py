@@ -5,8 +5,8 @@ from .settings import get_settings
 from fastapi import HTTPException
 
 class HTTPObjectNotFound(HTTPException):
-    def __init__(self) -> None:
-        super().__init__(404, "Object not found in Database")
+    def __init__(self, item: str = "Object") -> None:
+        super().__init__(404, f"{item} not found in Database")
         
 class HTTPObjectExists(HTTPException):
     def __init__(self) -> None:
