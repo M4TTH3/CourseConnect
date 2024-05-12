@@ -1,11 +1,10 @@
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, Security, HTTPException
-from ..internal.chats_util import GroupSessionsManager, GroupSession, Message
+from ..internal.chats_util import GroupSessionsManager, GroupSession, GroupMember
 import uuid
 from ..internal.auth import AuthUser, auth
-from ..internal import crud, schemas, db_models as models
+from ..internal import crud, schemas
 from sqlalchemy.orm import Session
-
-from typing import Optional
+from pydantic import ValidationError
 
 manager = GroupSessionsManager()
 
@@ -34,7 +33,7 @@ async def websocket_endpoint(
 ):
     """
     First extract the bearer token and verify the token
-    Second check the chat exists and the user is inside the chat 
+    Second check the chat exists and the user is a part of the chat 
     """
     try:
         auth_header = websocket.headers.get('Authorization')
@@ -46,6 +45,7 @@ async def websocket_endpoint(
         # Check the user is in the chat
         if not auth_user.uid in [user.id for user in chat.users]: raise Exception()
     except:
+        # Error close the socket and return
         await websocket.close()
         return
     
@@ -53,19 +53,34 @@ async def websocket_endpoint(
     Send and update responses
     """
     await websocket.accept()
-    # await websocket.send_text(str(bearer_token))
-    manager.attach(chat_id, websocket)
-    session = manager.getSession(chat_id)
+    
+    user = GroupMember(ws=websocket, id=auth_user.uid)
+    manager.attach(chat_id, user)
+    
+    session = manager.get_session(chat_id)
+    
+    # First send the first scroll message
+    await session.scroll(user, db)
     
     try:
         while True:
-            data = await websocket.receive_json()
+            data = await user.receive_json()
 
-            await session.sendAll(
-                f"ID: {chat_id}, Member Count: {len(manager.getSession(chat_id))}, Sent: {data}"
-            )
+            try:
+                data_formatted = schemas.ChatAction.model_validate(data)
+                
+                match data_formatted.action.lower():
+                    case 'send':
+                        await session.send(data_formatted.payload, auth_user.uid, db)
+                    case 'delete':
+                        await session.delete_message(data_formatted.payload, auth_user.uid, db)
+                    case 'scroll':
+                        await session.scroll(user, db)
+
+            except ValidationError:
+                user.send_json(schemas.ChatResponse(action='error', payload="Bad payload format").model_dump())
+            except HTTPException as e:
+                user.send_json(schemas.ChatResponse(action='error', payload=str(e)).model_dump())
+
     except WebSocketDisconnect:
-        session.disconnect(websocket)
-        await session.sendAll(
-            f"User Disconnected; {len(manager.getSession(chat_id))} members remaining."
-        )
+        manager.disconnect(chat_id, user)

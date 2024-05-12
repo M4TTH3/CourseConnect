@@ -93,8 +93,9 @@ class Message(DB_Base):
     __tablename__ = "messages"
     
     id = Column(Integer, primary_key=True, autoincrement=True)
-    sender = Column(Integer, index=True)
+    sender = Column(UUID(as_uuid=True), index=True)
     contents = Column(String)
+    post_date = Column(BIGINT, index=True)
     chat_id = Column(UUID(as_uuid=True), ForeignKey("chats.id"))
 
     chat = relationship("Chat", back_populates="messages")

@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Literal
 from pydantic import BaseModel
 from uuid import UUID
 
@@ -79,10 +79,11 @@ class MessageBase(BaseModel):
 class CreateMessage(MessageBase):
     contents: str
     chat_id: UUID
+    sender: UUID
+    post_date: int
     
 class Message(CreateMessage):
-    sender: str
-    id: UUID
+    id: int
 
     class Config:
         orm_mode = True
@@ -133,6 +134,33 @@ class Post(CreatePost):
     class Config:
         from_attributes = True
         
+        
+"""
+Formatting Responses and Payloads in the chat websocket
+"""
 
+class ChatAction(BaseModel):
+    """
+    This will be the default template for receiving via websocket
+    
+    Action has types:
+    - send (sends a message)
+    - delete (deletes a message)
+    - scroll (increments pagesize and returns a list of messages of size pagesize)
+    """
+    
+    action: Literal['send', 'delete', 'scroll']
+    payload: str | int | None = None
 
+class ChatResponse(BaseModel):
+    """
+    Action has types:
+    - update_last (update the last message in the list)
+    - refresh (update all messages on front end)
+    - delete (given an integer ID for the message to remove)
+    - error
+    """
+    
+    action: Literal['update_last', 'refresh', 'delete', 'error']
+    payload: Message | list[Message] | int | str
     

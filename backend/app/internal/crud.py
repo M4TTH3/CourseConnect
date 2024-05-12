@@ -53,6 +53,12 @@ def create_user(db: Session, user: schemas.User) -> models.User:
 Post Functions
 """
 
+def get_posts(db: Session, id: UUID, offset: int, size: int, course_code: str) -> list[models.Post]:
+    """
+    Returns a list of size n of Posts that the user doesn't own.
+    """
+    return db.query(models.Post).filter(models.Post.id != id, models.Post.course_code.contains(course_code)).offset(offset).limit(size).all()
+
 def get_post(db: Session, id: UUID) -> models.Post | None:
     return db.query(models.Post).filter(models.Post.id == id).first()
 
@@ -213,4 +219,27 @@ def create_chat(db: Session, chat: schemas.Chat, commit = True, *users: models.U
     
     return db_item
     
+"""
+Message CRUD operations 
+"""
+def get_messages(db: Session, chat_id: UUID, pagesize: int) -> list[models.Message]:
+    return db.query(models.Message).filter(models.Message.chat_id == chat_id).limit(pagesize).order_by(models.Message.post_date).all()
+
+def create_message(db: Session, message: schemas.CreateMessage) -> models.Message:
+    # The DB will autoincrement and assign the message ID
+    db_item = models.Message(**message.model_dump())
     
+    db.add(db_item)
+    db.commit()
+    db.refresh(db_item)
+    return db_item
+
+def delete_message(db: Session, message_id: int, sender: UUID) -> bool:
+    item = db.query(models.Message).filter(models.Message.id == message_id).first()
+    
+    if item.sender != sender: raise HTTPException(400, "User didn't send this message")
+    
+    db.delete(item)
+    db.commit()
+    
+    return True
