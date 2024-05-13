@@ -1,106 +1,87 @@
-from typing import Annotated
-from fastapi import (
-    APIRouter,
-    Cookie,
-    Depends,
-    Query,
-    WebSocket,
-    WebSocketDisconnect
-)
-from fastapi.responses import HTMLResponse
-
-class GroupSession:
-    """
-        id_code: uniquely defines the group session
-        members: holds connection for all connected members
-    """
-
-    id_code: int
-    members: list[WebSocket]
-
-    def __init__(self, idcode: int, ws: WebSocket) -> None:
-        self.id_code = idcode
-        self.members = [ws]
-
-    def attach(self, ws: WebSocket) -> None:
-        self.members.append(ws)
-
-    def disconnect(self, ws: WebSocket) -> None:
-        self.members.remove(ws)
-
-    async def sendAll(self, msg: str) -> None:
-        "Sends the message to everyone in the group"
-        for member in self.members:
-            await member.send_text(msg)
-    
-    def __len__(self) -> int:
-        return len(self.members)
-
-class GroupSessionsManager:
-    """
-        Manages all the different group sessions happening at the same time
-    """
-
-    sessions: dict[int, GroupSession]
-
-    def __init__(self) -> None:
-        self.sessions = {}
-
-    def attach(self, idcode: int, ws: WebSocket) -> None:
-        session = self.sessions.get(idcode)
-
-        if not session: 
-            self.sessions[idcode] = GroupSession(idcode, ws)
-        else:
-            self.sessions[idcode].attach(ws)
-
-        print(idcode)
-        print(self.sessions[idcode].members)
-        print(self.sessions)
-
-    def getSession(self, idCode) -> GroupSession:
-        return self.sessions.get(idCode)
-
-class Message:
-
-    msg: str
-    sender: str
-    timestamp: str
-    expiry_date: str
-
-    def __init__(self, sender: str, msg: str, duration: int) -> None:
-        """
-        duration: milliseconds
-        """
-        pass
-
-    def __str__(self) -> str:
-        return self.msg
-
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, Security, HTTPException
+from ..internal.chats_util import GroupSessionsManager, GroupSession, GroupMember
+import uuid
+from ..internal.auth import AuthUser, auth
+from ..internal import crud, schemas
+from sqlalchemy.orm import Session
+from pydantic import ValidationError
 
 manager = GroupSessionsManager()
 
 router = APIRouter(prefix="/chats")
 
-@router.get('/')
-async def chat_home():
-    return HTMLResponse("hello")
+@router.delete("/leave/{chat_id}", response_model=schemas.User)
+def leave_chat(chat_id: uuid.UUID, auth_result: AuthUser = Security(auth.verify, scopes=['readwrite:post']), db: Session = Depends(crud.get_db)):
+    return crud.leave_chat(db, chat_id=chat_id, user_id=auth_result.uid)
 
 
-@router.websocket("/{idcode}/ws")
+async def verify_from_header(ws: WebSocket, auth_header: str) -> AuthUser:
+    if not auth_header: raise "No auth header"
+    
+    bearer, token = auth_header.split(' ')
+    if not bearer or bearer.lower() != 'bearer' or not token: raise "Bad header format"
+    
+    auth_user: AuthUser = await auth.verify_std(['read:groupchat', 'write:groupchat'], token)
+    return auth_user
+
+@router.websocket("/{chat_id}/ws")
+# https://github.com/tiangolo/fastapi/issues/2031
 async def websocket_endpoint(
-    *,
-    websocket: WebSocket,
-    idcode: int
+    websocket: WebSocket, 
+    chat_id: uuid.UUID, 
+    db: Session = Depends(crud.get_db)
 ):
-    await websocket.accept()
-    manager.attach(idcode, websocket)
-
+    """
+    First extract the bearer token and verify the token
+    Second check the chat exists and the user is a part of the chat 
+    """
     try:
-        while True:
-            data = await websocket.receive_text()
+        auth_header = websocket.headers.get('Authorization')
+        auth_user: AuthUser = await verify_from_header(ws=websocket, auth_header=auth_header)
+        chat = crud.get_chat(db, chat_id)
+        
+        if not chat or not auth_user: raise Exception()
+        
+        # Check the user is in the chat
+        if not auth_user.uid in [user.id for user in chat.users]: raise Exception()
+    except Exception as e:
+        # Error close the socket and return
+        await websocket.close()
+        return
+    
+    """
+    Send and update responses
+    """
+    await websocket.accept()
+    
+    user = GroupMember(ws=websocket, id=auth_user.uid)
+    manager.attach(chat_id, user)
+    
+    session = manager.get_session(chat_id)
+    
+    # First send the first scroll message
+    await session.scroll(user, db)
+    
 
-            await manager.getSession(idcode).sendAll(f"ID: {idcode}, Member Count: {len(manager.getSession(idcode))}, Sent: {data}")
-    except WebSocketDisconnect:
-        manager.getSession(idcode).disconnect(websocket)
-        await manager.getSession(idcode).sendAll(f"User Disconnected; {len(manager.getSession(idcode))} members remaining.")
+    while True:
+        try:
+            data = await user.get_ws().receive_json()
+            data_formatted = schemas.ChatAction.model_validate(data)
+            
+            match data_formatted.action.lower():
+                case 'send':
+                    await session.send(data_formatted.payload, auth_user.uid, db)
+                case 'delete':
+                    await session.delete_message(data_formatted.payload, auth_user.uid, db)
+                case 'scroll':
+                    await session.scroll(user, db)
+
+        except WebSocketDisconnect:
+            manager.disconnect(chat_id, user)
+            return
+
+        except ValidationError as e:
+            await user.get_ws().send_text(schemas.ChatResponse(action='error', payload="Bad payload format").model_dump_json())
+
+        except Exception as e:
+            await user.get_ws().send_text(schemas.ChatResponse(action='error', payload=str(e)).model_dump_json())

@@ -1,28 +1,11 @@
-from functools import lru_cache
-from pydantic_settings import BaseSettings
-
+from .settings import get_settings, AppSettings
 from fastapi import Depends, HTTPException, status
 from fastapi.security import SecurityScopes, HTTPAuthorizationCredentials, HTTPBearer
 import jwt
 import requests as req
+import uuid
 
-"""
-Load the auth0 settings from .env
-"""
-
-class AUTH0_Settings(BaseSettings):
-    domain: str
-    api_audience: str
-    issuer: str
-    algorithm: str
-    
-    class Config:
-        env_file = "app/.env"
-
-# Cache the setting to reduce reloading settings
-@lru_cache()
-def get_settings() -> AUTH0_Settings:
-    return AUTH0_Settings()
+import hashlib
 
 """
 Create the class to verify the token
@@ -31,16 +14,32 @@ Create the class to verify the token
 class AuthUser:
     """
     This class will be returned to allow holds all the data for an authenticated user
+    hashed_open_id stores any results of get_openid_param when hash is true
     """
     
     access_token: str
     decoded: dict[str, any]
-    open_id: dict
+    uid: uuid.UUID
+    sub: str
+    openid: dict | None 
+    hashed_open_id: dict[str, str | bytes] 
     
     def __init__(self, access_token, decoded) -> None:
         self.access_token = access_token
         self.decoded = decoded
-        self.open_id = None
+        self.openid = None
+        self.hashed_open_id = {}
+        
+        try:
+            # uid comes as 21 digit number. lets make it a 32 bit number.
+            # take the last 31 bits
+            self.uid = uuid.UUID(decoded['uid'])
+            self.sub = decoded['sub']
+        
+        except ValueError:
+            raise UnauthorizedException('Bad UUID value')
+        except Exception:
+            raise UnauthorizedException('Missing uid or sub')
     
     def get_openid(self) -> dict:
         scope: str = self.decoded.get("scope")
@@ -57,25 +56,34 @@ class AuthUser:
             )
             
             if data.status_code == 200:
-                self.open_id = data.json()
-                return self.open_id
+                self.openid = data.json()
+                return self.openid
             else:
                 raise "Bad openid retrieval"
             
         except Exception as e:
             raise UnauthorizedException(str(e))
         
-    def get_openid_param(self, option: str) -> str:
+    def get_openid_param(self, option: str = 'email', hash: bool = True) -> str:
         """
-        Options include 'email' 'picture'
+        Options include 'email' (only email for now)
+        Will hash if is true for a protected database
+        Use a faster hash sha256
         """
         
-        if not self.open_id:
+        if option in self.decoded:
+            ret: str = self.decoded[option]
+        
+        elif not self.openid:
             self.get_openid()
-    
-        ret = self.open_id.get(option)
-        if not ret:
-            raise UnauthorizedException(f'Missing "{option} scope"')
+            ret: str = self.openid.get(option)
+            
+        if not ret: raise UnauthorizedException(f'Missing "{option} scope"')
+        
+        if hash:
+            encoded = ret.encode('utf-8')
+            ret = hashlib.sha256(encoded).hexdigest()
+            self.hashed_open_id[option] = ret
         
         return ret
     
@@ -95,7 +103,7 @@ class UnauthenticatedException(HTTPException):
 
 class VerifyJWT:
 
-    config: AUTH0_Settings
+    config: AppSettings
 
     def __init__(self) -> None:
         self.config = get_settings()
@@ -113,29 +121,39 @@ class VerifyJWT:
             decoded: dict - the decoded token
         }
         """
-        
-        if token is None: raise UnauthenticatedException
+        return await self.verify_std(security_scopes.scopes, token.credentials)
+
+    
+    async def verify_std(self, scopes: list[str], token):
+        if token is None: raise UnauthenticatedException()
         
         try:
             # Get token 'kid'
-            signing_key = self.jwks_client.get_signing_key_from_jwt(token.credentials).key 
+            signing_key = self.jwks_client.get_signing_key_from_jwt(token).key 
             
             # Get the payload
             payload: dict = jwt.decode(
-                token.credentials,
+                token,
                 signing_key,
                 algorithms=self.config.algorithm,
                 audience=self.config.api_audience,
                 issuer=self.config.issuer
             )
             
+            is_verified: bool | None = payload.get('is_verified')
+            if not is_verified: raise UnauthorizedException('Email is not verified')
+        
+        except UnauthorizedException:
+            raise
+        
         except Exception as error:
             raise UnauthorizedException(str(error))
         
-        if len(security_scopes.scopes) > 0:
-            self._check_scopes(payload, security_scopes.scopes)
+        if len(scopes) > 0:
+            self._check_scopes(payload, scopes)
         
-        return AuthUser(token.credentials, payload)
+        return AuthUser(token, payload)
+        
     
     def _check_scopes(self, payload: dict[str, str], expected_scopes: list) -> None:
         if 'scope' not in payload:
@@ -147,4 +165,4 @@ class VerifyJWT:
              if search not in scopes:
                  raise UnauthorizedException(detail=f'Missing "{search}" scope')
         
-        
+auth = VerifyJWT()
