@@ -44,7 +44,7 @@ async def websocket_endpoint(
         
         # Check the user is in the chat
         if not auth_user.uid in [user.id for user in chat.users]: raise Exception()
-    except:
+    except Exception as e:
         # Error close the socket and return
         await websocket.close()
         return
@@ -62,25 +62,26 @@ async def websocket_endpoint(
     # First send the first scroll message
     await session.scroll(user, db)
     
-    try:
-        while True:
-            data = await user.receive_json()
 
-            try:
-                data_formatted = schemas.ChatAction.model_validate(data)
-                
-                match data_formatted.action.lower():
-                    case 'send':
-                        await session.send(data_formatted.payload, auth_user.uid, db)
-                    case 'delete':
-                        await session.delete_message(data_formatted.payload, auth_user.uid, db)
-                    case 'scroll':
-                        await session.scroll(user, db)
+    while True:
+        try:
+            data = await user.get_ws().receive_json()
+            data_formatted = schemas.ChatAction.model_validate(data)
+            
+            match data_formatted.action.lower():
+                case 'send':
+                    await session.send(data_formatted.payload, auth_user.uid, db)
+                case 'delete':
+                    await session.delete_message(data_formatted.payload, auth_user.uid, db)
+                case 'scroll':
+                    await session.scroll(user, db)
 
-            except ValidationError:
-                user.send_json(schemas.ChatResponse(action='error', payload="Bad payload format").model_dump())
-            except HTTPException as e:
-                user.send_json(schemas.ChatResponse(action='error', payload=str(e)).model_dump())
+        except WebSocketDisconnect:
+            manager.disconnect(chat_id, user)
+            return
 
-    except WebSocketDisconnect:
-        manager.disconnect(chat_id, user)
+        except ValidationError as e:
+            await user.get_ws().send_text(schemas.ChatResponse(action='error', payload="Bad payload format").model_dump_json())
+
+        except Exception as e:
+            await user.get_ws().send_text(schemas.ChatResponse(action='error', payload=str(e)).model_dump_json())

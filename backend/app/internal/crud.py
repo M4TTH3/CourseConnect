@@ -57,7 +57,7 @@ def get_posts(db: Session, id: UUID, offset: int, size: int, course_code: str) -
     """
     Returns a list of size n of Posts that the user doesn't own.
     """
-    return db.query(models.Post).filter(models.Post.id != id, models.Post.course_code.contains(course_code)).offset(offset).limit(size).all()
+    return db.query(models.Post).filter(models.Post.user_id != id, models.Post.course_code.contains(course_code)).offset(offset).limit(size).all()
 
 def get_post(db: Session, id: UUID) -> models.Post | None:
     return db.query(models.Post).filter(models.Post.id == id).first()
@@ -223,7 +223,7 @@ def create_chat(db: Session, chat: schemas.Chat, commit = True, *users: models.U
 Message CRUD operations 
 """
 def get_messages(db: Session, chat_id: UUID, pagesize: int) -> list[models.Message]:
-    return db.query(models.Message).filter(models.Message.chat_id == chat_id).limit(pagesize).order_by(models.Message.post_date).all()
+    return db.query(models.Message).filter(models.Message.chat_id == chat_id).order_by(models.Message.post_date).limit(pagesize).all()
 
 def create_message(db: Session, message: schemas.CreateMessage) -> models.Message:
     # The DB will autoincrement and assign the message ID
@@ -232,6 +232,7 @@ def create_message(db: Session, message: schemas.CreateMessage) -> models.Messag
     db.add(db_item)
     db.commit()
     db.refresh(db_item)
+    
     return db_item
 
 def delete_message(db: Session, message_id: int, sender: UUID) -> bool:

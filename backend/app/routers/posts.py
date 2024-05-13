@@ -9,6 +9,13 @@ import time
 
 router = APIRouter(prefix='/posts')
 
+@router.get('/all', response_model=list[schemas.Post])
+def get_posts(course_code: str = "", offset: int = 0, size: int = 20, auth_result: AuthUser = Security(auth.verify, scopes=['readwrite:post']), db: Session = Depends(crud.get_db)):
+    """
+    Gets posts w.r.t. offset and size. Hint or refine search w.r.t. course_code
+    """
+    return crud.get_posts(db, auth_result.uid, offset, size, course_code)
+
 @router.get('/{post_id}', response_model=schemas.Post)
 def get_post(post_id: uuid.UUID, auth_result: AuthUser = Security(auth.verify, scopes=['readwrite:post']), db: Session = Depends(crud.get_db)):
     # Want to verify the ownership of a post as well
@@ -63,10 +70,4 @@ def accept_post(post_id: uuid.UUID, auth_result: AuthUser = Security(auth.verify
     """
     return crud.accept_post(db, auth_result.uid, post_id)
 
-@router.get('/all/')
-def get_posts(course_code: str = "", offset: int = 0, size: int = 20, auth_result: AuthUser = Security(auth.verify, scopes=['readwrite:post']), db: Session = Depends(crud.get_db)):
-    """
-    Gets posts w.r.t. offset and size. Hint or refine search w.r.t. course_code
-    """
-    return crud.get_posts(db, auth_result.uid, offset, 20)
     

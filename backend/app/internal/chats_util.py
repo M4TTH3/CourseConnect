@@ -7,17 +7,18 @@ from sqlalchemy.orm import Session
 import uuid, time
 
 
-class GroupMember(WebSocket):
+class GroupMember:
     """
     This class will hold the members' websocket, pagesize (number of messages required), and ID
     """
     pagesize: int
     id: uuid.UUID
+    ws: WebSocket
     
     def __init__(self, ws: WebSocket, id: uuid.UUID) -> None:
         self.id = id
         self.pagesize = 0 # Start with 0 messages and then on first scroll we update
-        super.__init__(ws)
+        self.ws = ws
         
     def update_pagesize(self, increment = 25) -> None:
         """
@@ -25,6 +26,8 @@ class GroupMember(WebSocket):
         """
         self.pagesize += increment
         
+    def get_ws(self) -> WebSocket:
+        return self.ws
 
 class GroupSession:
     """
@@ -57,15 +60,16 @@ class GroupSession:
     async def send(self, msg: str, sender: uuid.UUID, db: Session) -> None:
         "Sends the message to everyone in the group"
         # First upload into the DB
-        send = schemas.CreateMessage(contents=msg, chat_id=self.chat_id, sender=sender, post_date=time.time())
+        send = schemas.CreateMessage(contents=msg, chat_id=self.chat_id, sender=sender, post_date=int(time.time()))
         item = crud.create_message(db, send)
+    
         
         payload = schemas.Message.model_validate(item)
         response = schemas.ChatResponse(action="update_last", payload=payload)
         
         # Now send the response to every user in the session
         for member in self.members:
-            await member.send_json(response.model_dump())
+            await member.get_ws().send_text(response.model_dump_json())
         
     async def scroll(self, member: GroupMember, db: Session) -> None:
         """
@@ -76,7 +80,7 @@ class GroupSession:
         payload = [schemas.Message.model_validate(msg) for msg in messages]
         response = schemas.ChatResponse(action='refresh', payload=payload)
         
-        await member.send_json(response.model_dump())
+        await member.get_ws().send_text(response.model_dump_json())
         
     async def delete_message(self, message_id: int, user_id: uuid.UUID, db: Session):
         """
@@ -87,7 +91,7 @@ class GroupSession:
         response = schemas.ChatResponse(action='delete', payload=message_id)
         
         for member in self.members:
-            await member.send_json(response.model_dump()) 
+            await member.get_ws().send_text(response.model_dump_json()) 
     
     def __len__(self) -> int:
         return len(self.members)
