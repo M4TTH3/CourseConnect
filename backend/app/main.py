@@ -4,7 +4,7 @@ from .internal.auth import auth, AuthUser
 
 from fastapi.staticfiles import StaticFiles
 
-app = FastAPI(debug=True)
+app = FastAPI()
 
 app.include_router(chats.router)
 app.include_router(users.router)
