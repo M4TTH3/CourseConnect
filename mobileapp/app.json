@@ -36,6 +36,8 @@
     "plugins": [
       "expo-router",
       "expo-secure-store"
-    ]
-  }
+    ],
+    "sdkVersion": "50.0.0"
+  },
+  "name": "uwcourseconnect"
 }

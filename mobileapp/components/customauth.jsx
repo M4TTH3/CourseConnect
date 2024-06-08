@@ -8,6 +8,7 @@ import * as AuthSession from 'expo-auth-session'
 import { Alert } from 'react-native';
 
 /* 
+
 These functions allow you to securely store tokens in the device encrypted
 
 setToken: stores the token
@@ -17,6 +18,7 @@ const AUTH_STORAGE_KEY = "jwtToken";
 const setToken = async (token) => setItemAsync(AUTH_STORAGE_KEY, token);
 const getCachedToken = async () => getItemAsync(AUTH_STORAGE_KEY);
 
+
 /* Settings for Auth0 */
 const AUTH0_DOMAIN = "https://dev-ci0ohe1d547k4xmv.us.auth0.com";
 const AUTH0_SETTINGS = {
@@ -25,14 +27,12 @@ const AUTH0_SETTINGS = {
     authEndpoint: `${AUTH0_DOMAIN}/authorize`,
     tokenEndpoint: `${AUTH0_DOMAIN}/oauth/token`,
     redirectUri: AuthSession.makeRedirectUri({ scheme: "uwcourseconnect" }),
-    scopes: ['openid', 'email', 'offline_access', 'read:groupchat', 'write:groupchat', 'read:profile', 'write:profile']
+    scopes: ['openid', 'offline_access', 'read:groupchat', 'write:groupchat', 'read:profile', 'write:profile']
 };
-
-// // Debug redirect url
-// console.log(AUTH0_SETTINGS.redirectUri);
 
 /* Let the web browser close correctly when using authenticating */
 WebBrowser.maybeCompleteAuthSession();
+
 
 /** Create a context wrapper for the login info */
 const AuthContext = createContext(null);

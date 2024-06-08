@@ -4,7 +4,7 @@ from .internal.auth import auth, AuthUser
 
 from fastapi.staticfiles import StaticFiles
 
-app = FastAPI(debug=True)
+app = FastAPI()
 
 app.include_router(chats.router)
 app.include_router(users.router)
@@ -20,3 +20,4 @@ async def root():
 @app.get("/tokentest")
 async def tokentest(auth_result: AuthUser = Security(auth.verify, scopes=['read:profile'])):
     return str(auth_result)
+
