@@ -1,0 +1,36 @@
+services: 
+  postgres:
+    image: postgres:14-alpine
+    expose:
+      - 5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=TestPassword1!
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=courseconnect
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context:
+        .
+    ports:
+      - 8000:80
+    depends_on:
+      postgres: 
+        condition: service_healthy
+    restart: always
+
+volumes:
+  postgres_data:
+    driver: local
+    driver_opts:
+      o: "size=100m,uid=1000"
+      device: tmpfs
+      type: tmpfs
+

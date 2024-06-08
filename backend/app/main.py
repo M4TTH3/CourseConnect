@@ -20,3 +20,4 @@ async def root():
 @app.get("/tokentest")
 async def tokentest(auth_result: AuthUser = Security(auth.verify, scopes=['read:profile'])):
     return str(auth_result)
+
