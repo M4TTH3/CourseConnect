@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "uwcourseconnect",
-    "slug": "uwcourseconnect",
-    "scheme": "uwcourseconnect",
+    "name": "courseconnect",
+    "slug": "courseconnect",
+    "scheme": "courseconnect",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -22,14 +22,18 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.m4tth3.courseconnect"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
       "eas": {
-        "projectId": "7bf6bc9e-5459-4790-9c2b-19c99043c087"
+        "projectId": "f1e366e0-3cf7-4835-ac9f-12bbc3958484"
+      },
+      "router": {
+        "origin": false
       }
     },
     "owner": "m4tth3",
@@ -39,5 +43,5 @@
     ],
     "sdkVersion": "50.0.0"
   },
-  "name": "uwcourseconnect"
+  "name": "courseconnect"
 }

@@ -5,7 +5,8 @@ import { jwtDecode } from 'jwt-decode'
 import "core-js/stable/atob"; // Used to fix jwtDecode imports from core-js
 import * as WebBrowser from 'expo-web-browser'
 import * as AuthSession from 'expo-auth-session'
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
+import { useRouter } from 'expo-router';
 
 /* 
 
@@ -21,18 +22,20 @@ const getCachedToken = async () => getItemAsync(AUTH_STORAGE_KEY);
 
 /* Settings for Auth0 */
 const AUTH0_DOMAIN = "https://dev-ci0ohe1d547k4xmv.us.auth0.com";
+const AUTH0_CALLBACK_URI = AuthSession.makeRedirectUri({ scheme: 'courseconnect', path: '/' });
 const AUTH0_SETTINGS = {
     clientId: "oaGNeBKP9gAgI6CiyBuV9PTGc49kZZCH",
     domain: AUTH0_DOMAIN,
     authEndpoint: `${AUTH0_DOMAIN}/authorize`,
     tokenEndpoint: `${AUTH0_DOMAIN}/oauth/token`,
-    redirectUri: AuthSession.makeRedirectUri({ scheme: "uwcourseconnect" }),
+    redirectUri: AUTH0_CALLBACK_URI,
     scopes: ['openid', 'offline_access', 'read:groupchat', 'write:groupchat', 'read:profile', 'write:profile']
 };
 
 /* Let the web browser close correctly when using authenticating */
 WebBrowser.maybeCompleteAuthSession();
 
+console.log(AUTH0_CALLBACK_URI)
 
 /** Create a context wrapper for the login info */
 const AuthContext = createContext(null);
@@ -45,10 +48,12 @@ export const useAuthContext = () => {
     return authProps;
 };
 
+
 export const AuthContextProvider = ({ children }) => {
     // A wrapper provider for the values
 
     const [user, setUser] = useState({});
+    const router = useRouter();
 
     /** Parameters for login */
     const [request, result, promptAsync] = AuthSession.useAuthRequest(
@@ -72,6 +77,7 @@ export const AuthContextProvider = ({ children }) => {
          */
         setToken("");
         setUser({});
+        router.replace('/');
     };
 
     const readTokenFromStorage = async () => {
@@ -97,7 +103,12 @@ export const AuthContextProvider = ({ children }) => {
         setUser({ jwtToken: tokenResponse.accessToken, token: decoded }); // Update the current user
     };
 
+    const getToken = () => {
+        
+    }
+
     useEffect(() => {
+        
         // Update contents whenever the result is changed
         readTokenFromStorage();
         if (!result) return;
@@ -132,7 +143,7 @@ export const AuthContextProvider = ({ children }) => {
                 console.log(err);
             });
         };
-
+        
     }, [result]);
 
     return (

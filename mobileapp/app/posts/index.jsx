@@ -12,139 +12,144 @@ import { randomUUID } from "expo-crypto";
 import { useState } from "react";
 import Post from "components/posts";
 import { router } from "expo-router";
+import LogoutModal from "components/logoutModal";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+const DATA = [
+  {
+    id: randomUUID(),
+    post_date: new Date().valueOf(),
+    user_id: randomUUID(),
+    course_code: "CS241",
+    course_name: "Introduction to Sequential Programming Introduction to Sequential Programming",
+    content_type: "Assignment",
+    size_limit: 2,
+    content_number: 5,
+    linked_chat: {
+      users: [randomUUID()],
+    },
+  },
+  {
+    id: randomUUID(),
+    post_date: new Date().valueOf(),
+    user_id: randomUUID(),
+    course_code: "CS341",
+    course_name: "Algorithms",
+    content_type: "Quiz",
+    content_number: 2,
+    size_limit: 4,
+    linked_chat: {
+      users: [randomUUID(), randomUUID()],
+    },
+  },
+  {
+    id: randomUUID(),
+    post_date: new Date().valueOf(),
+    user_id: randomUUID(),
+    course_code: "CS341",
+    course_name: "Algorithms",
+    content_type: "Quiz",
+    content_number: 2,
+    size_limit: 4,
+    linked_chat: {
+      users: [randomUUID()],
+    },
+  },
+  {
+    id: randomUUID(),
+    post_date: new Date().valueOf(),
+    user_id: randomUUID(),
+    course_code: "CS341",
+    course_name: "Algorithms",
+    content_type: "Quiz",
+    content_number: 2,
+    size_limit: 4,
+    linked_chat: {
+      users: [randomUUID()],
+    },
+  },
+  {
+    id: randomUUID(),
+    post_date: new Date().valueOf(),
+    user_id: randomUUID(),
+    course_code: "CS341",
+    course_name: "Algorithms",
+    content_type: "Quiz",
+    content_number: 2,
+    size_limit: 4,
+    linked_chat: {
+      users: [randomUUID(), randomUUID(), randomUUID()],
+    },
+  },
+  {
+    id: randomUUID(),
+    post_date: new Date().valueOf(),
+    user_id: randomUUID(),
+    course_code: "CS341",
+    course_name: "Algorithms",
+    content_type: "Quiz",
+    content_number: 2,
+    size_limit: 4,
+    linked_chat: {
+      users: [randomUUID()],
+    },
+  },
+  {
+    id: randomUUID(),
+    post_date: new Date().valueOf(),
+    user_id: randomUUID(),
+    course_code: "CS341",
+    course_name: "Algorithms",
+    content_type: "Quiz",
+    content_number: 2,
+    size_limit: 4,
+    linked_chat: {
+      users: [randomUUID()],
+    },
+  },
+  {
+    id: randomUUID(),
+    post_date: new Date().valueOf(),
+    user_id: randomUUID(),
+    course_code: "CS341",
+    course_name: "Algorithms",
+    content_type: "Quiz",
+    content_number: 2,
+    size_limit: 4,
+    linked_chat: {
+      users: [randomUUID()],
+    },
+  },
+  {
+    id: randomUUID(),
+    post_date: new Date().valueOf(),
+    user_id: randomUUID(),
+    course_code: "CS341",
+    course_name: "Algorithms",
+    content_type: "Quiz",
+    content_number: 2,
+    size_limit: 4,
+    linked_chat: {
+      users: [randomUUID()],
+    },
+  },
+];
 
 export default function PostsPage() {
-  const [refreshing, setRefreshing] = useState(false);
-
-  const DATA = [
-    {
-      id: randomUUID(),
-      post_date: new Date().valueOf(),
-      user_id: randomUUID(),
-      course: "CS241",
-      course_name: "Introduction to Sequential Programming Introduction to Sequential Programming",
-      content_type: "Assignment",
-      size_limit: 2,
-      content_number: 5,
-      linked_chat: {
-        users: [randomUUID()],
-      },
-    },
-    {
-      id: randomUUID(),
-      post_date: new Date().valueOf(),
-      user_id: randomUUID(),
-      course: "CS341",
-      course_name: "Algorithms",
-      content_type: "Quiz",
-      content_number: 2,
-      size_limit: 4,
-      linked_chat: {
-        users: [randomUUID(), randomUUID()],
-      },
-    },
-    {
-      id: randomUUID(),
-      post_date: new Date().valueOf(),
-      user_id: randomUUID(),
-      course: "CS341",
-      course_name: "Algorithms",
-      content_type: "Quiz",
-      content_number: 2,
-      size_limit: 4,
-      linked_chat: {
-        users: [randomUUID()],
-      },
-    },
-    {
-      id: randomUUID(),
-      post_date: new Date().valueOf(),
-      user_id: randomUUID(),
-      course: "CS341",
-      course_name: "Algorithms",
-      content_type: "Quiz",
-      content_number: 2,
-      size_limit: 4,
-      linked_chat: {
-        users: [randomUUID()],
-      },
-    },
-    {
-      id: randomUUID(),
-      post_date: new Date().valueOf(),
-      user_id: randomUUID(),
-      course: "CS341",
-      course_name: "Algorithms",
-      content_type: "Quiz",
-      content_number: 2,
-      size_limit: 4,
-      linked_chat: {
-        users: [randomUUID(), randomUUID(), randomUUID()],
-      },
-    },
-    {
-      id: randomUUID(),
-      post_date: new Date().valueOf(),
-      user_id: randomUUID(),
-      course: "CS341",
-      course_name: "Algorithms",
-      content_type: "Quiz",
-      content_number: 2,
-      size_limit: 4,
-      linked_chat: {
-        users: [randomUUID()],
-      },
-    },
-    {
-      id: randomUUID(),
-      post_date: new Date().valueOf(),
-      user_id: randomUUID(),
-      course: "CS341",
-      course_name: "Algorithms",
-      content_type: "Quiz",
-      content_number: 2,
-      size_limit: 4,
-      linked_chat: {
-        users: [randomUUID()],
-      },
-    },
-    {
-      id: randomUUID(),
-      post_date: new Date().valueOf(),
-      user_id: randomUUID(),
-      course: "CS341",
-      course_name: "Algorithms",
-      content_type: "Quiz",
-      content_number: 2,
-      size_limit: 4,
-      linked_chat: {
-        users: [randomUUID()],
-      },
-    },
-    {
-      id: randomUUID(),
-      post_date: new Date().valueOf(),
-      user_id: randomUUID(),
-      course: "CS341",
-      course_name: "Algorithms",
-      content_type: "Quiz",
-      content_number: 2,
-      size_limit: 4,
-      linked_chat: {
-        users: [randomUUID()],
-      },
-    },
-  ];
+  const [ refreshing, setRefreshing ] = useState(false);
+  const [ logoutVisible, setLogoutVisible ] = useState(false);
 
   return (
-    <View style={styles.mainContainer}>
+    <SafeAreaView style={styles.mainContainer}>
+      <LogoutModal modalVisible={logoutVisible} disableModal={() => setLogoutVisible(false)} />
       <View id="postTopGrid" style={styles.postTopGrid}>
-        <MaterialIcons name="menu" size={30} style={styles.topGridButton} />
+        <MaterialIcons name="menu" size={30} style={styles.topGridButton} onPress={(() => setLogoutVisible((prev) => !prev))} />
         <View id="postRefineSearch" style={styles.postRefineSearch}>
           <TextInput
             style={styles.searchInput}
             placeholderTextColor="black"
             placeholder="Search Groups..."
+            onKeyPress={(e) => e}
           />
           <MaterialCommunityIcons
             name="magnify"
@@ -177,9 +182,7 @@ export default function PostsPage() {
         onRefresh={() => console.log('hello')}
         refreshing={refreshing}
       />
-
-
-    </View>
+    </SafeAreaView>
   );
 }
 

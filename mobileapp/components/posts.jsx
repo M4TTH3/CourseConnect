@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet } from "react-native";
 export default function Post ({ item: postData }) {
     return (
       <View style={postStyles.postContainer}>
-        <Text style={postStyles.courseCode}>{postData?.course}</Text>
+        <Text style={postStyles.courseCode}>{postData?.course_code}</Text>
         <Text numberOfLines={1} style={postStyles.courseName}>{postData?.course_name}</Text>
         <View style={postStyles.bottomBar}>
           <Text style={postStyles.memberCount}>{postData?.linked_chat.users.length}/{postData?.size_limit} Members</Text>
@@ -23,7 +23,7 @@ export default function Post ({ item: postData }) {
       paddingBottom: 5,
       paddingLeft: 20,
       paddingRight: 20,
-      borderColor: "#F3F3F3",
+      borderColor: "#E0E0E0",
       borderWidth: 2,
       borderRadius: 10,
       color: "black",
