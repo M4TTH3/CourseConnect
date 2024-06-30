@@ -163,3 +163,14 @@ class ChatResponse(BaseModel):
     action: Literal['update_last', 'refresh', 'delete', 'error']
     payload: Message | list[Message] | int | str
     
+
+"""
+Response for UW API Courses 
+"""
+class Course(BaseModel):
+    course_code: str
+    course_name: str
+    description: str
+
+class CourseResponse(BaseModel):
+    courses: list[Course]

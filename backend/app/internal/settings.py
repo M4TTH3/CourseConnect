@@ -16,6 +16,8 @@ class AppSettings(BaseSettings):
     management_client_secret: str
     management_aud: str
     management_token_endpoint: str
+
+    uw_api_key: str
     
     class Config:
         env_file = "app/.env"

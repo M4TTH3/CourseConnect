@@ -1,6 +1,15 @@
 import { View, Text, Pressable, StyleSheet } from "react-native";
 
-export default function Post ({ item: postData }) {
+/**
+ * Item is the Post details. isOwner is a bool to check if the user is the owner of the post.
+ * If the user is the owner, they can edit the post.
+ * 
+ * @param {item, isOwner} param0  
+ * @returns 
+ */
+export default function Post ({ item: postData, isOwner }) {
+
+
     return (
       <View style={postStyles.postContainer}>
         <Text style={postStyles.courseCode}>{postData?.course_code}</Text>
@@ -8,7 +17,9 @@ export default function Post ({ item: postData }) {
         <View style={postStyles.bottomBar}>
           <Text style={postStyles.memberCount}>{postData?.linked_chat.users.length}/{postData?.size_limit} Members</Text>
           <Pressable style={postStyles.joinButton}>
-            <Text>Join</Text>
+            {
+              isOwner ? <Text>Edit</Text> : <Text>Join</Text>
+            }
           </Pressable>
         </View>
       </View>

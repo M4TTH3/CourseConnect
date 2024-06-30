@@ -149,7 +149,7 @@ class VerifyJWT:
         except Exception as error:
             raise UnauthorizedException(str(error))
         
-        if len(scopes) > 0:
+        if scopes and len(scopes) > 0:
             self._check_scopes(payload, scopes)
         
         return AuthUser(token, payload)
