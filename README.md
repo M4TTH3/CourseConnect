@@ -5,7 +5,7 @@
 Course Connect is an app to **anonymously** connect classmates at the University of Waterloo! Securely login and anonymously create course specific posts to match and chat! Use this for specific assignments, labs, or quizzes for any class such as *wink wink* CLAS104.
 
 ## Overview
-How did we create this? Visit a high level overview:
+How did I create this? Visit a high level overview:
 
 **Front End**: React Native *with Expo*
 
