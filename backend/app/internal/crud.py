@@ -4,6 +4,9 @@ from .database import HTTPObjectExists, engine, SessionLocal, HTTPObjectNotFound
 from fastapi import HTTPException
 from typing import Generator
 from uuid import UUID
+from .settings import get_settings
+import requests as req
+import random
 
 models.DB_Base.metadata.create_all(bind=engine)
 
@@ -48,7 +51,7 @@ def create_user(db: Session, user: schemas.User) -> models.User:
     db.refresh(db_item)
 
     return db_item
-    
+
 """
 Post Functions
 """
@@ -76,7 +79,7 @@ def search_similar_post(db: Session, user_id: UUID, post: schemas.CreatePost) ->
         models.Post.size_limit == post.size_limit,
         models.Post.user_id != user_id
     ).first()
-    
+
 
 def create_post(db: Session, post: schemas.Post) -> models.Post:
     
@@ -97,6 +100,7 @@ def delete_post(db: Session, post_id: UUID, user_id: UUID, force = False) -> boo
     
     if not post: raise HTTPObjectNotFound()
     if not force and post.user_id != user_id: raise HTTPException(400, "User does not own post")
+    if post.linked_chat: raise HTTPException(400, "Can't delete a post that has been accepted")
     
     db.delete(post)
     db.commit()
@@ -105,16 +109,19 @@ def delete_post(db: Session, post_id: UUID, user_id: UUID, force = False) -> boo
 
 def update_post(db: Session, user_id: UUID, post_id: UUID, updated_params: schemas.CreatePost) -> models.Post:
     """
-    This is to update the parameters
+    This is to update the parameters. Note if a chat exists, then we want to update it as well.
+    Can only update it if there are no chats linked to it.
     """
     post = get_post(db, post_id)
     
     if not post or user_id != post.user_id: raise HTTPObjectNotFound("Post belonging to user")
+    if post.linked_chat: raise HTTPException(400, "Can't update a post that has been accepted")
     
     post.course_code = updated_params.course_code
     post.content_type = updated_params.content_type
     post.content_number = updated_params.content_number
     post.description = updated_params.description
+    post.size_limit = updated_params.size_limit
     
     db.add(post)
     db.commit()
@@ -201,7 +208,7 @@ def leave_chat(db: Session, chat_id: UUID, user_id: UUID) -> models.User:
     db.refresh(user)
     
     return user
-        
+
 
 def create_chat(db: Session, chat: schemas.Chat, commit = True, *users: models.User) -> models.Chat:
     
@@ -218,7 +225,7 @@ def create_chat(db: Session, chat: schemas.Chat, commit = True, *users: models.U
         db.refresh(db_item)
     
     return db_item
-    
+
 """
 Message CRUD operations 
 """
@@ -244,3 +251,79 @@ def delete_message(db: Session, message_id: int, sender: UUID) -> bool:
     db.commit()
     
     return True
+
+def get_courses(filter: str | None) -> schemas.CourseResponse:
+    """
+    Get the courses from uwaterloo api endpoint. Need to get the term first
+    """
+
+    settings = get_settings()
+    base_endpoint = "https://openapi.data.uwaterloo.ca/v3"
+    current_term_endpoint = f"{base_endpoint}/Terms/current"
+
+    response = req.get(current_term_endpoint, headers={"X-API-KEY": settings.uw_api_key})
+    term = response.json()["termCode"]
+
+    courses_endpoint = f"{base_endpoint}/Courses/{term}"
+    response = req.get(courses_endpoint, headers={"X-API-KEY": settings.uw_api_key})
+    courses_raw: list[dict[str, str]] = response.json()
+    
+    # For returning
+    courses: list[schemas.Course] = []
+    courses_by_desc: list[schemas.Course] = []
+
+    # If the filter is not provided, then return a random 10 courses
+    if not filter:
+        max_len = len(courses_raw)
+        random_incides = random.sample(range(max_len), k=min(max_len, 10))
+        for course in [courses_raw[i] for i in random_incides]:
+            courses.append(schemas.Course(
+                course_code=f"{course['subjectCode']} {course['catalogNumber']}",
+                course_name=course["title"],
+                description=course["description"]
+            ))
+        return schemas.CourseResponse(courses=courses)
+    
+    # We will get the courses by code first. If it comes empty, we will use the course name
+    # Make this more efficent by only querying until max of 10 items.
+    # Fill array of description as a backup.
+    
+    # Set it to the lower case
+    filter = filter.lower().replace(' ', '')
+    filter_numeric = filter.isnumeric()
+    filter_alpha = filter.isalpha()
+    
+    for course in courses_raw:
+        if (len(courses)) >= 10: break
+        
+        if (filter_numeric and filter in course["catalogNumber"]
+            or (
+                not filter_numeric
+                and filter_alpha
+                and course["subjectCode"].startswith(filter)
+            )
+            or (
+                not filter_numeric
+                and not filter_alpha
+                and filter
+                in f"{course['subjectCode']}{course['catalogNumber']}".lower()
+            )
+        ): courses.append(schemas.Course(
+            course_code=f"{course['subjectCode']} {course['catalogNumber']}",
+            course_name=course["title"],
+            description=course["description"]
+        ))
+        
+        if (len(courses_by_desc) < 10 and filter in course["description"].lower()):
+            courses_by_desc.append(schemas.Course(
+                course_code=f"{course['subjectCode']} {course['catalogNumber']}",
+                course_name=course["title"],
+                description=course["description"]
+            ))
+
+    # Empty case, then go by descriptions.
+    if len(courses) == 0:
+        return schemas.CourseResponse(courses=courses_by_desc[0: min(len(courses_by_desc), 10)])
+
+    # Limit the number of courses to 10
+    return schemas.CourseResponse(courses=courses[0: min(len(courses), 10)])

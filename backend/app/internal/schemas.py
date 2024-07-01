@@ -45,6 +45,11 @@ class ChatSimplfiied(ChatBase):
     This one will restrict access to seeing messages from the Chats.
     Used for querying public Posts and hiding the associated messages
     """
+    size_limit: int
+    course_code: str
+    content_type: str
+    content_number: int | None = None
+    post_id: UUID | None = None
     users: list['UserBase'] = [] # Want only IDs from User
     
     # Don't need the post attribute
@@ -54,15 +59,9 @@ class ChatSimplfiied(ChatBase):
         """
         self.users = [UserBase(**test.model_dump()) for test in self.users]
     
+    
 class Chat(ChatSimplfiied):
 
-    size_limit: int
-    course_code: str
-    content_type: str
-    content_number: int | None = None
-    post_id: UUID | None = None
-    
-    users: list['UserBase'] = [] 
     messages: list['Message'] = []
     
     class Config:
@@ -164,3 +163,14 @@ class ChatResponse(BaseModel):
     action: Literal['update_last', 'refresh', 'delete', 'error']
     payload: Message | list[Message] | int | str
     
+
+"""
+Response for UW API Courses 
+"""
+class Course(BaseModel):
+    course_code: str
+    course_name: str
+    description: str
+
+class CourseResponse(BaseModel):
+    courses: list[Course]
