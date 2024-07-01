@@ -26,8 +26,8 @@ How did we create this? Visit a high level overview:
 Here are some preview images of CourseConnect:
 
 ![Image 4](assets/MobileView1.png)
-![Image 6](assets/MobileView3.png)
 ![Image 7](assets/MobileView4.png)
+![Image 6](assets/MobileView3.png)
 ![Image 8](assets/MobileView5.png)
 ![Image 9](assets/MobileView6.png)
 ![Image 10](assets/MobileView7.png)
