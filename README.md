@@ -26,33 +26,26 @@ How did I create this? Visit a high level overview:
 **Here are some preview images of CourseConnect:**
 
 ### View Posts
-<img src="assets/MobileView1.png" width="250"/>
-<img src="assets/MobileView2.png" width="250"/>
-
-### Groups and Chats
-<img src="assets/MobileView9.png" width="250"/>
-<img src="assets/MobileView10.png" width="250"/>
-
-### Create Posts
-<div class="image-container">
-    <img src="assets/MobileView4.png" width="250"/>
-    <img src="assets/MobileView3.png" width="250"/>
-    <img src="assets/MobileView5.png" width="250"/>
-    <img src="assets/MobileView6.png" width="250"/>
-    <img src="assets/MobileView7.png" width="250"/>
-    <img src="assets/MobileView8.png" width="250"/>
+<div style="display: flex; flex-wrap: wrap; gap: 20px;">
+    <img src="assets/MobileView1.png" width="250" style="border-radius: 20px"/>
+    <img src="assets/MobileView2.png" width="250" style="border-radius: 20px"/>
 </div>
 
-<style>
-    .image-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
+### Groups and Chats
+<div style="display: flex; flex-wrap: wrap; gap: 20px;">
+    <img src="assets/MobileView9.png" width="250" style="border-radius: 20px"/>
+    <img src="assets/MobileView10.png" width="250" style="border-radius: 20px"/>
+</div>
 
-    }
-</style>
-
-</br>
+### Create Posts
+<div style="display: flex; flex-wrap: wrap; gap: 20px;">
+    <img src="assets/MobileView4.png" width="250" style="border-radius: 20px"/>
+    <img src="assets/MobileView3.png" width="250" style="border-radius: 20px"/>
+    <img src="assets/MobileView5.png" width="250" style="border-radius: 20px"/>
+    <img src="assets/MobileView6.png" width="250" style="border-radius: 20px"/>
+    <img src="assets/MobileView7.png" width="250" style="border-radius: 20px"/>
+    <img src="assets/MobileView8.png" width="250" style="border-radius: 20px"/>
+</div>
 
 ## API Documents
 
