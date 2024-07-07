@@ -22,27 +22,48 @@ How did I create this? Visit a high level overview:
 ## Features
 - Anonymously create posts for course assignments, labs, quizzes, etc. Wait until someone matches with it, and then chat away!
 
-## Preview
-Here are some preview images of CourseConnect:
+## Previews
+**Here are some preview images of CourseConnect:**
 
-![Image 4](assets/MobileView1.png)
-![Image 7](assets/MobileView4.png)
-![Image 6](assets/MobileView3.png)
-![Image 8](assets/MobileView5.png)
-![Image 9](assets/MobileView6.png)
-![Image 10](assets/MobileView7.png)
-![Image 11](assets/MobileView8.png)
-![Image 12](assets/MobileView9.png)
-![Image 13](assets/MobileView10.png)
-![Image 5](assets/MobileView2.png)
+### View Posts
+<img src="assets/MobileView1.png" width="250"/>
+<img src="assets/MobileView2.png" width="250"/>
 
-Feel free to explore the app and see how it works!
+### Groups and Chats
+<img src="assets/MobileView9.png" width="250"/>
+<img src="assets/MobileView10.png" width="250"/>
+
+### Create Posts
+<div class="image-container">
+    <img src="assets/MobileView4.png" width="250"/>
+    <img src="assets/MobileView3.png" width="250"/>
+    <img src="assets/MobileView5.png" width="250"/>
+    <img src="assets/MobileView6.png" width="250"/>
+    <img src="assets/MobileView7.png" width="250"/>
+    <img src="assets/MobileView8.png" width="250"/>
+</div>
+
+<style>
+    .image-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+
+    }
+</style>
+
+</br>
+
+## API Documents
+
+<img src="assets/API Docs.png" />
+<img src="assets/API Schemas.png" />
 
 
 ## Mentions 
 Thanks to Eugene Lee for creating a Figma Wireframe. [Link](https://www.figma.com/design/IBsMThM0eORSRxn2Xs5hHr/UWCourseConnect?node-id=0-1&t=Ub1CybyDOVu5Q1Gb-1)
 
-GiftedChat: Chat UI [Link]((https://github.com/FaridSafi/react-native-gifted-chat))
+GiftedChat: Chat UI [Link](https://github.com/FaridSafi/react-native-gifted-chat)
 
 ## License
 
